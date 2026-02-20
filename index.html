@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hidden Villain VN</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: black;
+      color: white;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    #bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    #character {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      max-height: 80%;
+    }
+
+    #text-box {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.7);
+      padding: 20px;
+      box-sizing: border-box;
+      z-index: 3;
+      font-size: 18px;
+    }
+
+    #choices {
+      margin-top: 10px;
+    }
+
+    .choice-btn {
+      background: white;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      margin-right: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    /* Video overlay */
+    #intro-video-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: black;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    #delete-video-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      cursor: pointer;
+      display: none;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <!-- Background image -->
+    <img id="bg" src="" alt="background">
+
+    <!-- Character placeholder -->
+    <img id="character" src="" alt="character">
+
+    <!-- Text box -->
+    <div id="text-box">
+      <div id="story-text"></div>
+      <div id="choices"></div>
+    </div>
+
+    <!-- Intro video overlay -->
+<div id="intro-video-container">
+  <video id="intro-video" width="80%" controls>
+    <source src="intro.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+  <div>
+    <button id="skip-video-btn">Skip Video</button>
+    <button id="delete-video-btn">Delete Video</button>
+  </div>
+</div>
+
+
+  <script>
+    //video logic 
+    const introVideo = document.getElementById('intro-video');
+  const videoContainer = document.getElementById('intro-video-container');
+  const deleteVideoBtn = document.getElementById('delete-video-btn');
+  const skipVideoBtn = document.getElementById('skip-video-btn');
+
+  // Show delete button only after video ends
+  introVideo.onended = () => {
+    deleteVideoBtn.style.display = 'inline-block';
+  };
+
+  // Delete video (after finished)
+  deleteVideoBtn.onclick = () => {
+    videoContainer.style.display = 'none';
+    startGame();
+  };
+
+  // Skip video anytime
+  skipVideoBtn.onclick = () => {
+    introVideo.pause();
+    videoContainer.style.display = 'none';
+    startGame();
+  };
+
+    // -----------------------------
+    // Game Logic
+    let currentScene = 'start';
+    let textSpeed = 30; // milliseconds per character
+    let isTextSkipping = false;
+
+    const bg = document.getElementById('bg');
+    const character = document.getElementById('character');
+    const storyTextEl = document.getElementById('story-text');
+    const choicesEl = document.getElementById('choices');
+
+    const scenes = {
+      start: {
+        bg: 'bg1.jpg', // placeholder background image
+        character: 'character1.png', // placeholder character
+        text: "You wake up in a dark room. The silence is overwhelming.",
+        choices: [
+          { text: "Look around", next: 'lookAround' },
+          { text: "Go back to sleep", next: 'sleep' }
+        ]
+      },
+      lookAround: {
+        bg: 'bg2.jpg',
+        character: 'character1.png',
+        text: "You notice shadows moving across the walls.",
+        choices: [
+          { text: "Investigate", next: 'investigate' },
+          { text: "Ignore", next: 'ignore' }
+        ]
+      },
+      sleep: {
+        bg: 'bg1.jpg',
+        character: 'character1.png',
+        text: "You fall into a dreamless sleep. Bad Ending.",
+        choices: []
+      },
+      investigate: {
+        bg: 'bg3.jpg',
+        character: 'character1.png',
+        text: "It was just your imagination. Nothing seems out of place.",
+        choices: [
+          { text: "Proceed", next: 'nextScene' },
+          { text: "Sit and think", next: 'nextScene' }
+        ]
+      },
+      ignore: {
+        bg: 'bg2.jpg',
+        character: 'character1.png',
+        text: "You ignore it, but something feels off...",
+        choices: [
+          { text: "Continue", next: 'nextScene' },
+          { text: "Retreat", next: 'nextScene' }
+        ]
+      },
+      nextScene: {
+        bg: 'bg4.jpg',
+        character: 'character2.png',
+        text: "This is a placeholder for the next scene. You can add more scenarios here.",
+        choices: [
+          { text: "Option 1", next: 'placeholder1' },
+          { text: "Option 2", next: 'placeholder2' }
+        ]
+      },
+      placeholder1: {
+        bg: 'bg5.jpg',
+        character: 'character2.png',
+        text: "Placeholder scenario 1.",
+        choices: []
+      },
+      placeholder2: {
+        bg: 'bg6.jpg',
+        character: 'character2.png',
+        text: "Placeholder scenario 2.",
+        choices: []
+      }
+    };
+
+    // -----------------------------
+    // Function to display text letter by letter
+    function typeText(text, callback) {
+      storyTextEl.innerHTML = '';
+      let i = 0;
+      isTextSkipping = false;
+
+      function addChar() {
+        if (isTextSkipping) {
+          storyTextEl.innerHTML = text;
+          if (callback) callback();
+          return;
+        }
+
+        if (i < text.length) {
+          storyTextEl.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(addChar, textSpeed);
+        } else {
+          if (callback) callback();
+        }
+      }
+
+      addChar();
+    }
+
+    // -----------------------------
+    // Function to show scene
+    function showScene(sceneKey) {
+      const scene = scenes[sceneKey];
+      currentScene = sceneKey;
+
+      // Set background and character
+      bg.src = scene.bg;
+      character.src = scene.character;
+
+      // Display text
+      typeText(scene.text, () => {
+        // Display choices
+        choicesEl.innerHTML = '';
+        scene.choices.forEach(choice => {
+          const btn = document.createElement('button');
+          btn.className = 'choice-btn';
+          btn.innerText = choice.text;
+          btn.onclick = () => showScene(choice.next);
+          choicesEl.appendChild(btn);
+        });
+      });
+    }
+
+    // -----------------------------
+    // Left click to advance text / skip animation
+    document.addEventListener('click', () => {
+      isTextSkipping = true;
+    });
+
+    // -----------------------------
+    // Start the game (after video)
+    function startGame() {
+      showScene('start');
+    }
+  </script>
+</body>
+</html>
